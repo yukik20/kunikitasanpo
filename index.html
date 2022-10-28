@@ -1,0 +1,231 @@
+<!-- 国立マップのフォーマットver0.0 (202208作成(ハシヅメ)(02210改良中(石川)) -->
+<!DOCTYPE html>
+<meta charset="utf-8">
+<!-- スマホでもPCでもそれなりに良く見えるようにするためのおまじない -->
+<meta name="viewport" content="width=device-width">
+<!-- インタラクティブ性はD3.jsを使用した -->
+<!-- <script src='https://d3js.org/d3.v3.min.js'></script> -->
+<script src='https://d3js.org/d3.v5.min.js'></script>
+<!-- svgには本来ないz-orderを無理やり操作するライブラリ -->
+<script type="text/javascript" src="svg-z-order.js"></script>
+<!-- 地図関係はleaflet.jsを使用した -->
+<link rel='stylesheet' href='https://unpkg.com/leaflet@1.8.0/dist/leaflet.css' />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300&display=swap" rel="stylesheet">
+<!-- <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700&display=swap" rel="stylesheet"> -->
+<script src='https://unpkg.com/leaflet@1.8.0/dist/leaflet.js'></script>
+<!-- 最低限あるいは初期設定的なstyleもcssで定義 -->
+<link rel='stylesheet' href='style.css' />
+<!-- 主データであるpointsはpoints.jsとして別ファイルで定義した  -->
+<script src='points.js'></script>
+<body>
+    <!-- タイトル：用途によって変えればよい -->
+    <table>
+        <tr>
+            <td><h1><img src="logo.png" width="450" height="70"></h1></td>
+            <td><h3>国分寺市の北西地域「くにきた」（国立駅北口側）を盛り上げたい！そんな思いから生まれました。<br>「くにきた」のおすすめスポットの紹介をしていきます。</h3></td>
+            <td><h1><a href= "https://www.instagram.com/kunikitasanpo/" target="_blank"><img src="insta.png" width="40" height="40"></a></h1></td>
+        </tr>
+    </table>
+    <!-- 詳細説明用のDIV要素を作成する。初期値を適当に入れて後からD3で書き換える作戦 -->
+    <div class="tooltip">
+        <h2>くにきたさんぽ h2</h2>
+        <p>くにきたさんぽ P</p>
+        <p><a id='link-hp' href="hoge.html" target="_blank"></a></p>
+        <p><a id='link-hp2' href="hoge.html" target="_blank"></a></p>
+        <p><img src="images/000_init.png" width="450"></p>
+<!--
+        <p><a id='Gmap' target="_blank" href="https://maps.google.com/maps?q=35.709, 139.45">
+            GoogleMapで開く
+        </a></p>
+-->
+        <button type="button">閉じる</button>
+    </div>
+
+    <!-- 地図表示用のdiv要素を定義 -->
+    <div id=map style='position:absolute;top:70px;left:0;right:0;bottom:0px;'></div>
+
+
+    <!-- 最下段の注記用のdiv要素
+    <div style='position:absolute;right:0;bottom:0px;'>
+        <p>2022.10.23</p>
+    </div> -->
+
+    <!-- 以上はメインのhtmlフレーム。以降が地図やらインタラクティブ性の追加のためのJSスクリプト -->
+    <script>
+        // 地図の表示(初期の中心緯度経度およびZoom倍率)
+        var map = new L.Map(
+            d3.select('div#map').node())
+                .setView([35.709, 139.45], 15
+            );
+        map.zoomControl.disable();
+
+        // 右下の注釈の追記
+        var tile = L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+            attribution : '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // プロットレイヤーを地図を覆うように定義する
+        var svgLayer = d3.select(map.getPanes().overlayPane).append('svg')
+            .attr('class', 'leaflet-zoom-hide')
+            .attr('width', 960).attr('height',500);
+        var plotLayer = svgLayer.append('g');
+
+        // 緯度・経度を画像上の位置に変換する
+        points.forEach(function(d){
+            d.pos = map.latLngToLayerPoint(new L.LatLng(d.latitude, d.longitude));
+        });
+
+        // ツールチップとして詳細表示もd3オブジェクトとして定義しておく
+        var tooltip = d3.select('.tooltip')
+
+        var r_c = 5 // 初期の円の半径
+
+        // プロットレイヤーにデータをプロットする
+        plotLayer.selectAll('circle').data(points).enter().append('circle')
+            .attr('r', r_c)
+            .attr('cx', function(d){return d.pos.x;})
+            .attr('cy', function(d){return d.pos.y;})
+            .attr("class",'target')
+            .attr('stroke', function(d){ return d.value })
+            .on("click", click_target) // クリックしたときの動作を定義
+            // ドラッグ開始・終了アクション定義
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("end", dragended)
+            )
+            // .on("mouseover", dragstarted); // ←マウスオーバー時の動作は一旦やめる
+
+        // クリックしたときの動作定義関数
+        function click_target(d){
+            // クリックしたときに円が全体に広がってグレイ背景になる
+            d3.select(this)
+                    .transition()
+                    .duration(700)
+                    .ease(d3.easeExpIn)
+                    .attr("r", 1000) // 変化後のサイズ
+                    .transition()
+                    .delay(1500)
+                    .duration(250)
+
+            // DIV要素を書き換えて詳細情報を表示
+            tooltip.select('h2').text(d.name)
+            tooltip.select('p').text(d.desc)
+            tooltip.select('a#link-hp').attr('href', d.link).text(d.link)
+            tooltip.select('a#link-hp2').attr('href', d.link2).text(d.link2)
+            tooltip.select('a#Gmap').attr('href',
+                'https://maps.google.com/maps?q=' + d.latitude + ',' + d.longitude)
+            tooltip.select('img').attr('src', 'images/' + d.img)
+            var mouseCoords = d3.mouse(this)
+            // 左に隠していたDIV要素を画面上に持ってきつつ透明をキャンセル
+            tooltip.style('left', 10 + "px")
+                .transition()
+                .delay(1500)
+                .style('opacity', 1.0)
+            console.log(d.name, tooltip);
+            };
+
+        // ドラッグ開始時の動作定義関数
+        function dragstarted(d) {
+            d3.select(this)
+                .transition()
+                .duration(70)
+                .ease(d3.easeExpIn)
+                .attr("r", 2*r_c) // 変化後のサイズ
+
+            // 選択した円をSVG要素の一番上に持ってくる
+            svgz_element(d3.select(this).node()).toTop()
+
+            plotLayer.append('text')
+                .attr('class','mouseover-text')
+                .attr('x', d.pos.x)
+                .attr('y', d.pos.y-16)
+                .html(d.name)
+                .transition()
+                // .delay(1000)
+                // .remove()
+                console.log(d.name, d.pos.x, d.pos.y);
+        };
+
+        // ドラッグ終了時の動作定義関数
+        function dragended(d) {
+            d3.select(this)
+                .transition()
+                .duration(70)
+                .ease(d3.easeExpIn)
+                .attr("r", r_c) // 変化後のサイズ
+            plotLayer.select('text.mouseover-text')
+                .remove()
+        };
+
+        // 閉じるボタンを押したときの動作
+        tooltip.select('button').on("click", function(){
+            // 詳細表示画面を閉じる
+            tooltip.transition()
+                .style('opacity', 0.0)
+            // 広げていた円をしまう
+            plotLayer.selectAll('circle')
+                .transition()
+                // .delay(1500)
+                // .duration(250)
+                .ease(d3.easeLinear)
+                .attr("r", r_c) // 元のサイズに戻す
+                .on("end", function(){ // 次に適用するイージングタイプを表示
+                });
+            // (透明になった)詳細画面を左側にしまう
+            tooltip.transition().delay(500).style('left', -999 + "px")
+                .style('z-index', 500)
+        })
+
+        //くにきたエリアに線を引く
+        var roadlatlons = [[35.71320214781616, 139.4445011593581], [35.70184999477257, 139.4560362988056], [35.699729215226164, 139.4593901339907], [35.6994356928604, 139.45936431672976], [35.699288931272314, 139.45053481349862], [35.69967994136268, 139.45035341089252], [35.70044958259331, 139.44932866998607], [35.70070933483193, 139.44887257143233], [35.70087769231235, 139.44836908601584], [35.70088250252086, 139.4480255312611], [35.70073338592231, 139.44804922469245], [35.70072857570482, 139.44780044366317], [35.70043034164831, 139.44782413693787], [35.70039666999174, 139.4471370274283], [35.70026198322327, 139.4471370274283], [35.700155834366534, 139.44471412528804], [35.70023021128739, 139.44232138908873], [35.700239508397615, 139.4418863461434], [35.70139234166481, 139.4411536422355], [35.70131796582798, 139.4368375582779], [35.701029758811615, 139.4354522895396], [35.70123429293526, 139.43520042257126], [35.700946085609814, 139.4337579117525], [35.70155039009428, 139.43340300829712], [35.70137374771871, 139.4319948429741], [35.703790925242764, 139.43058667750478], [35.70387459545904, 139.43524621641924], [35.703883892150984, 139.43524621641046], [35.70425575867305, 139.43584153833567], [35.70689596114997, 139.43445626993835], [35.70715625806244, 139.43742143106573], [35.70754670183749, 139.43730694608013], [35.707119072841266, 139.4343303364542], [35.71126170458324, 139.4318185194071], [35.71153128303274, 139.43336406671287], [35.71221916873755, 139.43298626626034], [35.711931001124356, 139.43142927045602], [35.7133532376559, 139.43069656653404], [35.71356703571786, 139.4321390773528], [35.71424560837623, 139.43177272539882], [35.714032772387334, 139.4302550762711], [35.71540577667402, 139.42946279900423], [35.715822390231324, 139.43270883177388], [35.71647447664412, 139.43229610595782], [35.71603069619321, 139.42915046595422], [35.71739825659466, 139.42834732382565], [35.71783297286579, 139.43155989233995], [35.71914616386498, 139.4308906072328], [35.71937257392219, 139.43324425993498], [35.7188020193543, 139.43311040291357], [35.718521268781444, 139.43359005724034], [35.71488532135635, 139.43686767582275], [35.71576942190127, 139.44190971494933], [35.71102207126757, 139.4441111687694], [35.71320214781616, 139.4445011593581]];
+        var kunikita = L.polyline(roadlatlons, { color: "#0e9aa7", weight: 4 }).addTo(map);
+
+        //var arealatlons = [[35.70444850267941, 139.4384770854265], [35.7046239665592, 139.44417291672977], [35.70148661411088, 139.4443198501625], [35.70129710564674, 139.4395401920279], [35.702512505357596, 139.4387623113322]];
+        //var souken = L.polygon(arealatlons, { color: 'green', weight: 2, fill: true, fillColor: 'green', opacity: 0.5 });
+
+        var roadlatlons = [[35.699513485864564, 139.4465387799081], [35.70235849686992, 139.44642042218214], [35.702915953347926, 139.44594699127825], [35.70285828561717, 139.44428998311457], [35.70499196394224, 139.44417162535976], [35.705760843011255, 139.4434614790039], [35.70660660142203, 139.44088128057763], [35.706760374714484, 139.43778030815707], [35.70716606951617, 139.43738485466176], [35.707212586448314, 139.43679289795998], [35.70880965136594, 139.4355707936215], [35.71022062380501, 139.43558988899898], [35.711910656817125, 139.43516979069446], [35.71374861344109, 139.4429461850164], [35.71449801235619, 139.44936166766536], [35.71704952738271, 139.44995208785306], [35.716740257198076, 139.4572656779339], [35.71438976454623, 139.4572656779339], [35.7141114121411, 139.45751327342913], [35.714931002550856, 139.45903693801512], [35.71525574358922, 139.4607701064817], [35.71219384686809, 139.4631889245621], [35.712085595843426, 139.46305560391085], [35.71078657207904, 139.4641602607357]]
+        var walkroute = L.polyline(roadlatlons, { color: 'orange', weight: 4 }).addTo(map);
+        var roadlatlons = [[35.699513485864564, 139.4465387799081], [35.70074102470568, 139.44649333445588], [35.70074102470578, 139.4490594910032], [35.70431020837711, 139.4538805441957], [35.70074102470578, 139.4490594910032], [35.70074102470568, 139.44649333445588], [35.70235849686992, 139.44642042218214], [35.705040099821275, 139.44419305941747], [35.69941276854807, 139.44449878108964], [35.69946794039038, 139.44653692557063], [35.69941276854807, 139.44449878108964], [35.705040099821275, 139.44419305941747], [35.70578486390301, 139.44347970884914], [35.70611586792818, 139.44229079123525], [35.70628136942539, 139.44212094586183], [35.70770190986788, 139.4455008687244], [35.70814323764922, 139.44558579141108], [35.70844664908152, 139.4471313843092], [35.70938301094075, 139.44877212146508], [35.70844664908152, 139.4471313843092], [35.70814323764922, 139.44558579141108], [35.70770190986788, 139.4455008687244], [35.71368252815235, 139.44292537367386], [35.71378687450369, 139.4434414837917], [35.71269638878069, 139.43780770815854], [35.71404739450391, 139.43742954724598], [35.7167582887782, 139.43518951117073], [35.71404739450391, 139.43742954724598], [35.71269638878069, 139.43780770815854], [35.71311733475964, 139.44003194321598], [35.708555905674885, 139.44144031978126], [35.706831309113305, 139.44231110809682], [35.70636566165873, 139.44226863062275],[35.7062621840772, 139.44199252704124], [35.706382907909244, 139.44152527482635], [35.70446855126755, 139.4374899142722], [35.715402823120435, 139.4311381599909]]
+        var bus = L.polyline(roadlatlons, { color: 'black', weight: 4 }).addTo(map);
+
+        //各ベクタレイヤをオブジェクトに設定
+        var overlay = {
+            "くにきたエリア": kunikita,
+            "バス": bus,
+            "ウォーキングルート": walkroute
+        }
+
+        //layersコントロールのオーバーレイに設定
+        L.control.layers(null, overlay).addTo(map);
+
+        // 地図の動きが動いてもプロットレイヤーが地図の上にあるように動かす(らしい)
+        var reset = function(){
+            var bounds = map.getBounds();
+            var topLeft = map.latLngToLayerPoint(bounds.getNorthWest());
+            var bottomRight = map.latLngToLayerPoint(bounds.getSouthEast());
+            svgLayer.attr("width", bottomRight.x - topLeft.x)
+                .attr("height", bottomRight.y - topLeft.y)
+                .style("left", topLeft.x + "px")
+                .style("top", topLeft.y + "px");
+            plotLayer.attr('transform', 'translate('+ -topLeft.x + ',' + -topLeft.y + ')');
+        };
+        reset() // ページを開いた直後に一回動作させとく
+        map.on("move", reset);
+
+        // プロットも地図の動きに合わせて動かす
+        var updatePosition = function(d){
+            d.pos = map.latLngToLayerPoint(new L.LatLng(d.latitude, d.longitude));
+            d3.select(this).attr("cx", d.pos.x).attr("cy", d.pos.y);
+        };
+        map.on('move', function(){
+            plotLayer.selectAll('circle').each(updatePosition);
+        });
+
+    </script>
+
+
+</body>
+
+
