@@ -1,0 +1,103 @@
+
+h1 {
+    background-color: #ffffff;
+    margin-top: 0;
+}
+
+h3 {
+    color: #000000;
+    margin-top: 0;
+    font-size: 90%;
+}
+
+body {
+  c: #ffffff;
+  color: #000000;
+  font-family: 'Noto Sans JP', sans-serif;
+  }
+
+/* 地図の色身を抜きたい */
+.leaflet-tile-pane {
+    -webkit-filter: grayscale(100%);
+    filter: grayscale(90%);
+  }
+
+.target {
+  fill: gray;
+/*  stroke: #ff533c;*/ /* 円の色を変える */
+  stroke-width: 3.5;
+  opacity: 0.7;
+  animation: circle 1.2s infinite 0.2s; /* keyframes名 速さ 繰り返し 開始までの間隔 */
+}
+
+@keyframes circle {
+  /* 0% { stroke-dasharray: 0 366; }
+  99.9%,to { stroke-dasharray: 366 366; } */
+  0% { stroke-width: 1.0; }
+  99.9%,to { stroke-width: 3.5; }
+}
+
+
+/* 詳細情報表示画面 */
+.tooltip {
+    position: absolute;
+    pointer-events:auto;
+    color:rgb(255, 255, 255);
+    /* font-size:12px; */
+    opacity:0.0;
+    /* background:#eee; */
+    /* border:2px solid #555; */
+    /* border-color: goldenrod; */
+    padding: 10px;
+    top: 50px; /* 初期は左の方に隠しておく */
+    left: -999px; /* 初期は左の方に隠しておく */
+    /* left: 10px; */
+    z-index: 19000; /* OSMの前面に持ってくる */
+ }
+
+.tooltip h2{
+    /* text-align: center; */
+    padding: 10px;
+    margin: 0px;
+}
+
+.leaflet-control-zoom {
+    visibility: hidden
+}
+
+.tooltip button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 14px;
+  /* font-family: -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif; */
+  border-radius: 6px;
+  border: none;
+  /* background: #6E6D70; */
+  /* box-shadow: 0px 0.5px 1px rgba(0, 0, 0, 0.1), 
+    inset 0px 0.5px 0.5px rgba(255, 255, 255, 0.5),
+    0px 0px 0px 0.5px rgba(0, 0, 0, 0.12); */
+  color: #000000;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+/* 画像はdiv要素いっぱいに広げる */
+img {
+    max-width:100%; height:auto;
+}
+
+.mouseover-text{
+  text-anchor: middle;
+  font-size: 20px;
+  fill: #ff533c;
+  font-weight: bolder;
+  font-family: 'Noto Sans JP', sans-serif;
+}
+
+/* ハイパーリンクは色を変えないようにしておく */
+a{
+  color:inherit;
+  /* text-decoration: none; */
+}
