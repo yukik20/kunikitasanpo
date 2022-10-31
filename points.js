@@ -87,5 +87,5 @@ var points = [
         link2:"",
         value:"yellow"
     },
-];
+]; 
 
