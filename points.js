@@ -80,5 +80,12 @@ var points = [
         link2:"",
         value:"blue"
     },
+    {
+        name:"自家製惣菜わたなべ", latitude:[35.70912349190735], longitude:[139.44655472598865],
+        desc:"地元に愛されるお惣菜屋さんです。揚げ物や焼き鳥、優しい味のお惣菜まで種類も豊富で美味しい。近所の高校生も訪れます。特に、自家製焼豚は絶品でした。",
+        link:"https://www.instagram.com/p/CkMW6q3y6Ce/",img:"012_watanabe.jpg",
+        link2:"",
+        value:"yellow"
+    },
 ];
 
