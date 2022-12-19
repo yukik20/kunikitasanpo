@@ -199,4 +199,11 @@ var points = [
         link2:"",
         value:"green"
     },
+    {
+        name:"光町もみじ公園", latitude:[35.70594578166603], longitude:[139.44536476570806],
+        desc:"平兵衛樹林地のお隣の公園です。散歩がてら富士山が見えたので、思わず写真撮っちゃいました。井戸の辺りから見えましたよー！",
+        link:"https://www.instagram.com/p/CmOqTidvZPU/",img:"029_hojuen.jpg",
+        link2:"",
+        value:"green"
+    },
 ];
